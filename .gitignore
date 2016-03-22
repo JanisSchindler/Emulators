@@ -1,0 +1,9 @@
+build-Emulators-Desktop_Qt_5_4_2_MinGW_32bit2-Debug/Makefile
+*.o
+build-Emulators-Desktop_Qt_5_4_2_MinGW_32bit2-Debug/Main/debug/Main.exe
+build-Emulators-Desktop_Qt_5_4_2_MinGW_32bit2-Debug/Main/debug/moc_controllerinput.cpp
+build-Emulators-Desktop_Qt_5_4_2_MinGW_32bit2-Debug/Main/ui_mainwindow.h
+build-Emulators-Desktop_Qt_5_4_2_MinGW_32bit2-Debug/Main/Makefile
+build-Emulators-Desktop_Qt_5_4_2_MinGW_32bit2-Debug/Main/debug/moc_mainwindow.cpp
+build-Emulators-Desktop_Qt_5_4_2_MinGW_32bit2-Debug/Main/Makefile.Debug
+build-Emulators-Desktop_Qt_5_4_2_MinGW_32bit2-Debug/Main/Makefile.Release
