@@ -30,20 +30,20 @@ class ControllerInput : public QObject
     Q_OBJECT
 
 public:
-    ControllerInput();
-    bool isConnected();
+    static ControllerInput* getInstance();
+    ~ControllerInput();
 
 signals:
     keyPressed(Input::Keys keys);
 
 private:
+    ControllerInput();
+    static ControllerInput* sInstance;
+
     XINPUT_STATE mControllerState;
     int mFoundController;
     QTimer* mPt_Timer;
     Input::Keys mCurrentKey;
-    short mRepeats;
-    Input::Keys SetFlag(Input::Keys current, Input::Keys added);
-    Input::Keys ResetFlag(Input::Keys current,Input::Keys removed);
 
 private slots:
     void onTimer();

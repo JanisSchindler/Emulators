@@ -2,7 +2,8 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "..\Input\controllerinput.h"
+#include "controllerinput.h"
+#include "viewmodel.h"
 
 namespace Ui {
 class MainWindow;
@@ -19,6 +20,10 @@ public:
 private:
     Ui::MainWindow *mUi;
     ControllerInput *mInput;
+    ViewModel *mModel;
+
+private slots:
+    void onControllerInput(Input::Keys keys);
 };
 
 #endif // MAINWINDOW_H

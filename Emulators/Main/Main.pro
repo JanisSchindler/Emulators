@@ -11,14 +11,14 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = Main
 TEMPLATE = app
 
-INCLUDEPATH += ..\Input\
-
 SOURCES += main.cpp\
         mainwindow.cpp \
-    controllerinput.cpp
+    controllerinput.cpp \
+    viewmodel.cpp
 
 HEADERS  += mainwindow.h\
-    controllerinput.h
+    controllerinput.h \
+    viewmodel.h
 
 
 FORMS    += mainwindow.ui
