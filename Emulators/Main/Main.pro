@@ -14,11 +14,13 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     controllerinput.cpp \
-    viewmodel.cpp
+    viewmodel.cpp \
+    mocmodel.cpp
 
 HEADERS  += mainwindow.h\
     controllerinput.h \
-    viewmodel.h
+    viewmodel.h \
+    mocmodel.h
 
 
 FORMS    += mainwindow.ui

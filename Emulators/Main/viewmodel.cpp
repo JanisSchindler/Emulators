@@ -3,9 +3,9 @@
 int Emulator::sCount = 0;
 int ROM::sCount = 0;
 
-static std::vector<ROM>* sEmptyRoms = new std::vector<ROM>();
-static Emulator *sNoEmulator = new Emulator();
-static ROM *sNoROM = new ROM();
+static std::vector<const ROM*>* sEmptyRoms = new std::vector<const ROM*>();
+static Emulator* sNoEmulator = new Emulator();
+static ROM* sNoROM = new ROM();
 
 ViewModel::ViewModel()
 {
@@ -25,28 +25,23 @@ int ViewModel::getEmulatorCount()
   return mMapEmulator2Rom.size();
 }
 
-std::vector<ROM> ViewModel::getRomsForIndex(int index)
+const std::vector<const ROM*>* ViewModel::getRomsForEmulator(const Emulator* emulator)
 {
-  if (index < 0 || (uint)index >= mMapEmulator2Rom.size())
+  if (!emulator->valid)
   {
-    return *sEmptyRoms;
-  }
-  const Emulator emulator = getEmulatorForIndex(index);
-  if (!emulator.valid)
-  {
-    return *sEmptyRoms;
+    return sEmptyRoms;
   }
   return mMapEmulator2Rom[emulator];
 }
 
-Emulator ViewModel::getEmulatorForIndex(int index)
+const Emulator* ViewModel::getEmulatorForIndex(int index)
 {
   if (index < 0 || (uint)index >= mMapEmulator2Rom.size())
   {
-    return *sNoEmulator;
+    return sNoEmulator;
   }
   int current = 0;
-  for(std::map<Emulator, std::vector<ROM> >::const_iterator it = mMapEmulator2Rom.begin();
+  for(std::map<const Emulator*, std::vector<const ROM*>* >::const_iterator it = mMapEmulator2Rom.begin();
       it != mMapEmulator2Rom.end(); it++)
   {
     if (current == index)
@@ -55,24 +50,30 @@ Emulator ViewModel::getEmulatorForIndex(int index)
     }
     ++current;
   }
-  return *sNoEmulator;
+  return sNoEmulator;
 }
 
-ROM ViewModel::getRomForIndices(int emulatorIndex, int romIndex)
+const ROM* ViewModel::getRomForIndex(const Emulator *emulator, int romIndex)
 {
-  if (romIndex < 0 || emulatorIndex < 0 || (uint)emulatorIndex >= mMapEmulator2Rom.size())
+  if (romIndex < 0 ||!emulator->valid)
   {
-    return *sNoROM;
+    return sNoROM;
   }
-  Emulator emulator = getEmulatorForIndex(emulatorIndex);
-  if (!emulator.valid)
+  std::vector<const ROM*>* roms = mMapEmulator2Rom[emulator];
+  if ((uint)romIndex >= roms->size())
   {
-    return *sNoROM;
+    return sNoROM;
   }
-  std::vector<ROM> roms = mMapEmulator2Rom[emulator];
-  if ((uint)romIndex >= roms.size())
-  {
-    return *sNoROM;
-  }
-  return roms[romIndex];
+  return roms->at(romIndex);
+}
+
+void ViewModel::AddEmulator(const Emulator* emulator)
+{
+  mMapEmulator2Rom[emulator] = new std::vector<const ROM*>();
+}
+
+void ViewModel::AddRom(const Emulator* emulator, const ROM* rom)
+{
+  std::vector<const ROM*>* roms = mMapEmulator2Rom[emulator];
+  roms->push_back(rom);
 }

@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include "controllerinput.h"
 #include "viewmodel.h"
+#include "mocmodel.h"
 
 namespace Ui {
 class MainWindow;
@@ -21,9 +22,11 @@ private:
     Ui::MainWindow *mUi;
     ControllerInput *mInput;
     ViewModel *mModel;
+    void updateRomList();
 
 private slots:
     void onControllerInput(Input::Keys keys);
+    void onCurrentRowChanged(int currentRow);
 };
 
 #endif // MAINWINDOW_H

@@ -100,12 +100,15 @@ class ViewModel
     ~ViewModel();
 
     int getEmulatorCount();
-    std::vector<ROM> getRomsForIndex(int index);
-    Emulator getEmulatorForIndex(int index);
-    ROM getRomForIndices(int emulatorIndex, int romIndex);
+    const std::vector<const ROM*>* getRomsForEmulator(const Emulator* emulator);
+    const Emulator* getEmulatorForIndex(int index);
+    const ROM* getRomForIndex(const Emulator* emulator, int romIndex);
+
+    void AddEmulator(const Emulator* emulator);
+    void AddRom(const Emulator* emulatorIndex, const ROM* rom);
 
 private:
-    std::map<Emulator, std::vector<ROM> > mMapEmulator2Rom;
+    std::map<const Emulator*, std::vector<const ROM*>* > mMapEmulator2Rom;
 };
 
 #endif // VIEWMODEL_H
