@@ -146,6 +146,13 @@ void ControllerInput::onTimer()
   {
      keys = SetFlag(keys, Input::Back);
   }
+  byte trigger1 = mControllerState.Gamepad.bLeftTrigger;
+  byte trigger2 = mControllerState.Gamepad.bRightTrigger;
+  if (trigger1 > XINPUT_GAMEPAD_TRIGGER_THRESHOLD && trigger2 > XINPUT_GAMEPAD_TRIGGER_THRESHOLD)
+  {
+    keys = SetFlag(keys, Input::Exit);
+  }
+
   // some consistency thingys (reset keys if there are concurrent inputs
   if (keys & Input::Accept && keys & Input::Back)
   {
@@ -173,5 +180,5 @@ void ControllerInput::onTimer()
   mRepeats = 0;
   keyPressed(keys);
   mCurrentKey = keys;
-  qDebug() << keys;
+ // qDebug() << "Input sent: " << keys;
 }

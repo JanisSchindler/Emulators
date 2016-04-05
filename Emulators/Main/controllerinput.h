@@ -21,7 +21,8 @@ namespace Input
         Right =  0x08,
         Down =   0x10,
         Left =   0x20,
-        Start =  0x40
+        Start =  0x40,
+        Exit =   0x80
     };
 }
 

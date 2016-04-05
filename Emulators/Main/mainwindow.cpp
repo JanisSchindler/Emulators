@@ -1,15 +1,21 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-MainWindow::MainWindow(QWidget *parent) :
+MainWindow::MainWindow(char *argv[], QWidget *parent) :
   QMainWindow(parent),
   mUi(new Ui::MainWindow)
 {
   mModel = new ViewModel();
-  mocModel* moc = new mocModel(mModel);
 
   mUi->setupUi(this);
   mInput = ControllerInput::getInstance();
+
+  Loader::Load(argv[0], mModel);
+  if (mModel->getEmulatorCount() <= 0)
+  {
+    mUi->mListEmulators->addItem("Failed to load any emulator");
+    return;
+  }
 
   int count = mModel->getEmulatorCount();
   for (int i = 0; i < count; ++i)
@@ -19,7 +25,7 @@ MainWindow::MainWindow(QWidget *parent) :
     {
       continue;
     }
-    mUi->mListEmulators->addItem(QString::fromStdString(emu->Name));
+    mUi->mListEmulators->addItem(QString::fromStdString(emu->name));
   }
 
   // connect signals
@@ -54,6 +60,40 @@ void HandleNavigationKeys(Input::Keys keys, QListWidget* list)
   }
 }
 
+void StartROM(const Emulator* emulator, const ROM* rom)
+{
+  LPCWSTR applicationName = emulator->executablePath;
+  std::wstring exe (emulator->executablePath);
+  std::wstring space (L" ");
+  std::wstring hyphen (L"\"");
+  std::wstring command = exe + space + emulator->arguments + space + hyphen + rom->path + hyphen;
+  LPWSTR commandLine = (LPWSTR)command.c_str();
+  // additional information
+  STARTUPINFO si;
+  PROCESS_INFORMATION pi;
+
+  // set the size of the structures
+  ZeroMemory( &si, sizeof(si) );
+  si.cb = sizeof(si);
+  ZeroMemory( &pi, sizeof(pi) );
+
+  // start the program up
+  CreateProcess(applicationName,   // the path
+                commandLine,        // Command line
+                NULL,           // Process handle not inheritable
+                NULL,           // Thread handle not inheritable
+                FALSE,          // Set handle inheritance to FALSE
+                0,              // No creation flags
+                NULL,           // Use parent's environment block
+                NULL,           // Use parent's starting directory
+                &si,            // Pointer to STARTUPINFO structure
+                &pi);          // Pointer to PROCESS_INFORMATION structure
+
+  // Close process and thread handles.
+  CloseHandle(pi.hProcess);
+  CloseHandle(pi.hThread);
+}
+
 void MainWindow::onControllerInput(Input::Keys keys)
 {
   if (keys == Input::None)
@@ -66,7 +106,7 @@ void MainWindow::onControllerInput(Input::Keys keys)
     HandleNavigationKeys(keys, mUi->mListEmulators);
     if (keys & Input::Accept)
     {
-       mUi->mListRoms->setFocus();
+      mUi->mListRoms->setFocus();
     }
     return;
   }
@@ -75,7 +115,13 @@ void MainWindow::onControllerInput(Input::Keys keys)
     HandleNavigationKeys(keys, mUi->mListRoms);
     if (keys & Input::Back)
     {
-       mUi->mListEmulators->setFocus();
+      mUi->mListEmulators->setFocus();
+    }
+    if (keys & Input::Accept)
+    {
+      const Emulator* emulator = mModel->getEmulatorForIndex(mUi->mListEmulators->currentRow());
+      const ROM* rom = mModel->getRomForIndex(emulator, mUi->mListRoms->currentRow());
+      StartROM(emulator, rom);
     }
   }
 }
@@ -97,6 +143,6 @@ void MainWindow::updateRomList()
   const std::vector<const ROM*>* roms = mModel->getRomsForEmulator(emu);
   for(std::vector<const ROM*>::const_iterator it = roms->begin(); it != roms->end(); ++it)
   {
-   this->mUi->mListRoms->addItem(QString::fromStdString((*it)->Name));
+    this->mUi->mListRoms->addItem(QString::fromStdString((*it)->name));
   }
 }

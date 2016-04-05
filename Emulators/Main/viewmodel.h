@@ -3,12 +3,15 @@
 
 
 #include <QAbstractItemModel>
+#include <Windows.h>
 
 struct Emulator
 {
   static int sCount;
   int index;
-  std::string Name;
+  std::string name;
+  LPCWSTR executablePath;
+  std::wstring arguments;
   bool valid;
 
   Emulator()
@@ -52,7 +55,8 @@ struct ROM
 {
   static int sCount;
   int index;
-  std::string Name;
+  std::string name;
+  std::wstring path;
   bool valid;
 
   ROM()

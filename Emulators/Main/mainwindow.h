@@ -2,9 +2,11 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <Windows.h>
 #include "controllerinput.h"
 #include "viewmodel.h"
 #include "mocmodel.h"
+#include "loader.h"
 
 namespace Ui {
 class MainWindow;
@@ -15,7 +17,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0);
+    explicit MainWindow( char *argv[], QWidget *parent = 0);
     ~MainWindow();
 
 private:

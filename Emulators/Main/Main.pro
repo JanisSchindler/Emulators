@@ -15,12 +15,14 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     controllerinput.cpp \
     viewmodel.cpp \
-    mocmodel.cpp
+    mocmodel.cpp \
+    loader.cpp
 
 HEADERS  += mainwindow.h\
     controllerinput.h \
     viewmodel.h \
-    mocmodel.h
+    mocmodel.h \
+    loader.h
 
 
 FORMS    += mainwindow.ui
