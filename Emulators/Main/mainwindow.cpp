@@ -63,11 +63,22 @@ void HandleNavigationKeys(Input::Keys keys, QListWidget* list)
 void StartROM(const Emulator* emulator, const ROM* rom)
 {
   LPCWSTR applicationName = emulator->executablePath;
-  std::wstring exe (emulator->executablePath);
-  std::wstring space (L" ");
-  std::wstring hyphen (L"\"");
-  std::wstring command = exe + space + emulator->arguments + space + hyphen + rom->path + hyphen;
-  LPWSTR commandLine = (LPWSTR)command.c_str();
+  QString commandLine = QString::fromStdWString(emulator->arguments);
+
+  // build command line -> replace the <rom> macro and put it in hyphens
+  QString romPath('\"');
+  romPath.append(QString::fromStdWString(rom->path));
+  romPath.append("\"");
+  commandLine.replace("<ROM>", romPath, Qt::CaseInsensitive);
+
+  qDebug() << commandLine;
+
+  int length = commandLine.length() + 1;
+
+  LPWSTR wcharCmdLine = new wchar_t[length];
+
+  commandLine.toWCharArray(wcharCmdLine);
+  wcharCmdLine[length - 1] = '\0';
   // additional information
   STARTUPINFO si;
   PROCESS_INFORMATION pi;
@@ -78,8 +89,10 @@ void StartROM(const Emulator* emulator, const ROM* rom)
   ZeroMemory( &pi, sizeof(pi) );
 
   // start the program up
+  // TODO: keep the handle so we can close it later
+
   CreateProcess(applicationName,   // the path
-                commandLine,        // Command line
+                wcharCmdLine,        // Command line
                 NULL,           // Process handle not inheritable
                 NULL,           // Thread handle not inheritable
                 FALSE,          // Set handle inheritance to FALSE
@@ -100,7 +113,6 @@ void MainWindow::onControllerInput(Input::Keys keys)
   {
     return;
   }
-  int curr = 0;
   if (mUi->mListEmulators->hasFocus())
   {
     HandleNavigationKeys(keys, mUi->mListEmulators);
@@ -145,4 +157,5 @@ void MainWindow::updateRomList()
   {
     this->mUi->mListRoms->addItem(QString::fromStdString((*it)->name));
   }
+  this->mUi->mListRoms->setCurrentRow(0);
 }
