@@ -8,3 +8,10 @@ build-Emulators-Desktop_Qt_5_4_2_MinGW_32bit2-Debug/Main/Makefile.Debug
 build-Emulators-Desktop_Qt_5_4_2_MinGW_32bit2-Debug/Main/Makefile.Release
 build-Emulators-Desktop_Qt_5_4_2_MinGW_32bit2-Debug/Main/ui_mainwindow.h
 Emulators/Emulators.pro.user
+build-Emulators-Desktop_Qt_5_4_2_MinGW_32bit2-Debug/Main/stdout.txt
+build-Emulators-Desktop_Qt_5_4_2_MinGW_32bit2-Release/Main/Makefile
+build-Emulators-Desktop_Qt_5_4_2_MinGW_32bit2-Release/Main/release/Main.exe
+build-Emulators-Desktop_Qt_5_4_2_MinGW_32bit2-Release/Main/release/moc_controllerinput.cpp
+build-Emulators-Desktop_Qt_5_4_2_MinGW_32bit2-Debug/Main/stdout.txt
+build-Emulators-Desktop_Qt_5_4_2_MinGW_32bit2-Release/Main/Makefile.Release
+build-Emulators-Desktop_Qt_5_4_2_MinGW_32bit2-Release/Main/release/moc_mainwindow.cpp

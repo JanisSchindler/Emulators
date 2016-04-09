@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+DWORD mAppHandleId = 0;
+
 MainWindow::MainWindow(char *argv[], QWidget *parent) :
   QMainWindow(parent),
   mUi(new Ui::MainWindow)
@@ -66,7 +68,8 @@ void StartROM(const Emulator* emulator, const ROM* rom)
   QString commandLine = QString::fromStdWString(emulator->arguments);
 
   // build command line -> replace the <rom> macro and put it in hyphens
-  QString romPath('\"');
+  // add a space - some programs seem to require it
+  QString romPath(" \"");
   romPath.append(QString::fromStdWString(rom->path));
   romPath.append("\"");
   commandLine.replace("<ROM>", romPath, Qt::CaseInsensitive);
@@ -89,8 +92,6 @@ void StartROM(const Emulator* emulator, const ROM* rom)
   ZeroMemory( &pi, sizeof(pi) );
 
   // start the program up
-  // TODO: keep the handle so we can close it later
-
   CreateProcess(applicationName,   // the path
                 wcharCmdLine,        // Command line
                 NULL,           // Process handle not inheritable
@@ -102,9 +103,44 @@ void StartROM(const Emulator* emulator, const ROM* rom)
                 &si,            // Pointer to STARTUPINFO structure
                 &pi);          // Pointer to PROCESS_INFORMATION structure
 
-  // Close process and thread handles.
+  // Close process and thread handles, remember id
+  mAppHandleId = (pi.dwProcessId);
   CloseHandle(pi.hProcess);
   CloseHandle(pi.hThread);
+}
+
+// So what does this do?
+// This is passed as callback for EnumWindows (below)
+// in it we compare the Window's process's handle
+// to the one we remembered upon creation of the emulator
+// and then tell it to close
+// not sure if this is the kosher way but it works...
+WINBOOL CALLBACK findAndClose (HWND hwnd, LPARAM lParam)
+{
+  DWORD procid;
+  GetWindowThreadProcessId (hwnd, &procid);
+  if (0 != mAppHandleId && procid == mAppHandleId)
+  {
+    // close the emulator
+    PostMessage(hwnd, WM_CLOSE, 0, 0);
+    return FALSE; // found and stopped
+  }
+  return TRUE; // continue iterating
+}
+
+// second pass, if found here it seemed not to have reacted to WM_CLOSE
+WINBOOL CALLBACK findAndKill (HWND hwnd, LPARAM lParam)
+{
+  DWORD procid;
+  GetWindowThreadProcessId (hwnd, &procid);
+  if (0 != mAppHandleId && procid == mAppHandleId)
+  {
+    qDebug() << "Process seemed not to react to WM_CLOSE";
+    // close the emulator
+    TerminateProcess(hwnd, 0);
+    return FALSE; // found and stopped
+  }
+  return TRUE; // continue iterating
 }
 
 void MainWindow::onControllerInput(Input::Keys keys)
@@ -113,6 +149,24 @@ void MainWindow::onControllerInput(Input::Keys keys)
   {
     return;
   }
+  if (keys & Input::Exit && 0 != mAppHandleId)
+  {
+    // find window handle
+    EnumWindows(findAndClose, 0);
+    Sleep(1000);
+    EnumWindows(findAndKill, 0);
+    // reset handle
+    mAppHandleId = 0;
+    return;
+  }
+  // exit this progrma
+  if (keys & Input::Exit && keys & Input::Accept && 0 == mAppHandleId &&
+      (mUi->mListEmulators->hasFocus() || mUi->mListRoms->hasFocus()))
+  {
+    exit(0);
+  }
+  // note: the following hasFocus() checks also prevent us
+  // triggering these if an emulator is running (and thus has focus)
   if (mUi->mListEmulators->hasFocus())
   {
     HandleNavigationKeys(keys, mUi->mListEmulators);

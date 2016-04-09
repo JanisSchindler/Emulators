@@ -2,10 +2,10 @@
 
 // define stub of the method we want to import
 // First get a convenient typedef
-typedef DWORD (*GetStateFunc)(DWORD, XINPUT_STATE*);
+typedef WINAPI DWORD (*GetStateFunc)(DWORD, XINPUT_STATE*);
 
 // next declare a stub which at least does not crash the program
-DWORD GetStateStub(DWORD, XINPUT_STATE*)
+WINAPI DWORD GetStateStub(DWORD, XINPUT_STATE*)
 {
   return 0;
 }
@@ -60,7 +60,7 @@ ControllerInput::ControllerInput()
     {
       break;
     }
-    for (int j = 0; j < 4; ++i)
+    for (int j = 0; j < 4; ++j)
     {
       DWORD result = mGetState(j, &mControllerState);
       if (result == ERROR_SUCCESS)
@@ -74,7 +74,7 @@ ControllerInput::ControllerInput()
     }
   }
   if (mFoundController < 0)
-  {    
+  {
     return;
   }
   // start polling timer

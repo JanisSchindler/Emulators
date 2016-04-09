@@ -35,7 +35,7 @@ void DoLoadRomsForEmulator(QString path, const Emulator* emulator, ViewModel* mo
   {
     if (infos[i].isDir())
     {
-      DoLoadRomsForEmulator(infos[i].absolutePath(), emulator, model, extension);
+      DoLoadRomsForEmulator(infos[i].absoluteFilePath(), emulator, model, extension);
     }
     if(infos[i].completeSuffix() == extension)
     {
@@ -45,6 +45,22 @@ void DoLoadRomsForEmulator(QString path, const Emulator* emulator, ViewModel* mo
       model->AddRom(emulator, rom);
     }
   }
+}
+
+// returns true if the ini file starts with an [EMULATOR] section
+bool CheckIniFile(QString path)
+{
+  bool result = false;
+  std::fstream fs;
+  fs.open (path.toStdString().c_str(), std::fstream::in);
+  char* line = new char[20];
+  fs.getline(line, 20);
+  if(0 == strcmp(line, "[EMULATOR]"))
+  {
+     result = true;
+  }
+  fs.close();
+  return result;
 }
 
 // loads the settings from the emulator ini file and
@@ -68,17 +84,49 @@ void LoadRomsForEmulator(Emulator* emulator, ViewModel* model)
 
   qDebug() << "ini file pattern " << QString::fromWCharArray(pattern, wcslen(pattern));
 
-  // Todo: consider the case there are multiple ini files!
   handle = FindFirstFile(pattern, &findIniFile);
   if (handle == INVALID_HANDLE_VALUE || handle == 0)
   {
-    // we need the ini file for the file ending at least
+    // we need the ini file for the file ending / command line at least
     return;
   }
 
+  // buffer root path
+  QString originalPath(path);
+  path.append(QString::fromWCharArray(findIniFile.cFileName));
+
+  bool found = true;
+  // check if the correct ini file is used
+  if (!CheckIniFile(path))
+  {
+    found = false;
+    for (int i=0; i<255; ++i)
+    {
+      if (FindNextFile(handle, &findIniFile))
+      {
+        path = QString(originalPath);
+        path.append(QString::fromWCharArray(findIniFile.cFileName));
+        if (!CheckIniFile(path))
+        {
+          continue;
+        }
+        found = true;
+      }
+    }
+  }
+  FindClose(handle);
+
+  if (!found)
+  {
+    // we need the ini file for the file ending / command line at least
+    return;
+  }
+  // reset path
+  path = QString(originalPath);
+
+
   wchar_t* iniFile;
   ConcatenateStrings(path.toStdWString().c_str(), findIniFile.cFileName, iniFile);
-  FindClose(handle);
 
   // buffer
   wchar_t* iniEntry = new wchar_t[MAX_PATH - 1];
@@ -124,10 +172,36 @@ void LoadRomsForEmulator(Emulator* emulator, ViewModel* model)
         iniFile            // ini file
       );
   // reuse buffer in model
+  if (res == 0  || res == MAX_PATH - 1)
+  {
+    // we depend on the command line
+    return;
+  }
   emulator->arguments = iniEntry;
 
-  // Todo: read DisplayName from Ini file
+  wchar_t* currentName = new wchar_t[100];
+  wchar_t* newName = new wchar_t[100];
+  CopyString(emulator->name.c_str(), currentName, emulator->name.length() + 1, true);
 
+  // read Display Name arguments for this emulator
+  res = GetPrivateProfileString
+      (
+        L"EMULATOR",     // section
+        L"DisplayName",  // key
+        currentName,   // default
+        newName,            // target buffer
+        100,      // buffer size
+        iniFile            // ini file
+      );
+  // reuse buffer in model
+  if (res != 0  && res <= 100)
+  {
+    std::wstring tmp(newName);
+    emulator->name = std::string(tmp.begin(), tmp.end());
+  }
+  delete currentName;
+  delete newName;
+  delete iniFile;
   DoLoadRomsForEmulator(path, emulator, model, extension);
 }
 
