@@ -33,6 +33,8 @@ MainWindow::MainWindow(char *argv[], QWidget *parent) :
   // connect signals
   connect(mInput, SIGNAL(keyPressed(Input::Keys)), this, SLOT(onControllerInput(Input::Keys)));
   connect(mUi->mListEmulators, SIGNAL(currentRowChanged(int)), this, SLOT(onCurrentRowChanged(int)));
+  connect(mUi->mListRoms, SIGNAL(itemDoubleClicked(QListWidgetItem*)),
+          this, SLOT(onRomListItemDoubleClicked(QListWidgetItem*)));
 
   // init focus
   mUi->mListEmulators->setFocus();
@@ -47,6 +49,20 @@ MainWindow::~MainWindow()
   delete mUi;
   delete mInput;
   delete mModel;
+}
+
+void MainWindow::keyPressEvent(QKeyEvent* e)
+{
+  if (e->key() ==Qt::Key_Escape)
+  {
+    onControllerInput(Input::Back);
+  }
+  else if (e->key() == Qt::Key_Return)
+  {
+    onControllerInput(Input::Accept);
+  }
+  // pass to Qt class
+  QMainWindow::keyPressEvent(e);
 }
 
 void HandleNavigationKeys(Input::Keys keys, QListWidget* list)
@@ -65,7 +81,10 @@ void HandleNavigationKeys(Input::Keys keys, QListWidget* list)
 void StartROM(const Emulator* emulator, const ROM* rom)
 {
   LPCWSTR applicationName = emulator->executablePath;
-  QString commandLine = QString::fromStdWString(emulator->arguments);
+
+  QString commandLine = QString::fromStdWString(emulator->executablePath);
+  commandLine.append(" ");
+  commandLine.append(QString::fromStdWString(emulator->arguments));
 
   // build command line -> replace the <rom> macro and put it in hyphens
   // add a space - some programs seem to require it
@@ -73,7 +92,6 @@ void StartROM(const Emulator* emulator, const ROM* rom)
   romPath.append(QString::fromStdWString(rom->path));
   romPath.append("\"");
   commandLine.replace("<ROM>", romPath, Qt::CaseInsensitive);
-
   qDebug() << commandLine;
 
   int length = commandLine.length() + 1;
@@ -109,6 +127,24 @@ void StartROM(const Emulator* emulator, const ROM* rom)
   CloseHandle(pi.hThread);
 }
 
+
+void MainWindow::onRomListItemDoubleClicked(QListWidgetItem* item)
+{
+  // get the emulator
+  const Emulator* emulator = mModel->getEmulatorForIndex(mUi->mListEmulators->currentRow());
+  if (!emulator->valid)
+  {
+    return;
+  }
+  // get the rom
+  const ROM* rom = mModel->getRomForIndex(emulator, mUi->mListRoms->currentRow());
+  if (!rom->valid)
+  {
+    return;
+  }
+  StartROM(emulator, rom);
+}
+
 // So what does this do?
 // This is passed as callback for EnumWindows (below)
 // in it we compare the Window's process's handle
@@ -123,6 +159,19 @@ WINBOOL CALLBACK findAndClose (HWND hwnd, LPARAM lParam)
   {
     // close the emulator
     PostMessage(hwnd, WM_CLOSE, 0, 0);
+    return FALSE; // found and stopped
+  }
+  return TRUE; // continue iterating
+}
+
+WINBOOL CALLBACK findAndEscape (HWND hwnd, LPARAM lParam)
+{
+  DWORD procid;
+  GetWindowThreadProcessId (hwnd, &procid);
+  if (0 != mAppHandleId && procid == mAppHandleId)
+  {
+    // close the emulator
+    PostMessage(hwnd, WM_KEYDOWN,  VK_ESCAPE, 0);
     return FALSE; // found and stopped
   }
   return TRUE; // continue iterating
@@ -151,9 +200,13 @@ void MainWindow::onControllerInput(Input::Keys keys)
   }
   if (keys & Input::Exit && 0 != mAppHandleId)
   {
-    // find window handle
+    // try the nice way (send WM_CLOSE)
     EnumWindows(findAndClose, 0);
     Sleep(1000);
+    // dolphin workaround -> send esc
+    EnumWindows(findAndEscape, 0);
+    Sleep(1000);
+    // try the not so nice way (TerminateProcess)
     EnumWindows(findAndKill, 0);
     // reset handle
     mAppHandleId = 0;
