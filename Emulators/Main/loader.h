@@ -4,8 +4,8 @@
 #include <windows.h>
 #include <fstream>
 #include <QDir>
-#include <QDebug>
 #include "viewmodel.h"
+#include "logger.h"
 
 class Loader
 {

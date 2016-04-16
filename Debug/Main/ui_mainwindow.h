@@ -46,6 +46,7 @@ public:
         sizePolicy.setVerticalStretch(0);
         sizePolicy.setHeightForWidth(MainWindow->sizePolicy().hasHeightForWidth());
         MainWindow->setSizePolicy(sizePolicy);
+        MainWindow->setStyleSheet(QStringLiteral("background-color: rgb(0, 0, 127);"));
         centralWidget = new QWidget(MainWindow);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
         centralWidget->setStyleSheet(QStringLiteral(""));
@@ -63,6 +64,7 @@ public:
         font.setPointSize(20);
         mListRoms->setFont(font);
         mListRoms->setAutoFillBackground(false);
+        mListRoms->setStyleSheet(QStringLiteral("background-color: rgb(255, 255, 255);"));
         mListRoms->setAlternatingRowColors(true);
 
         gridLayout->addWidget(mListRoms, 2, 0, 1, 2);
@@ -70,6 +72,7 @@ public:
         mListEmulators = new QListWidget(centralWidget);
         mListEmulators->setObjectName(QStringLiteral("mListEmulators"));
         mListEmulators->setFont(font);
+        mListEmulators->setStyleSheet(QStringLiteral("background-color: rgb(255, 255, 255);"));
 
         gridLayout->addWidget(mListEmulators, 1, 0, 1, 2);
 

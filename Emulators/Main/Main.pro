@@ -8,7 +8,7 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = Main
+TARGET = Emulators
 TEMPLATE = app
 
 SOURCES += main.cpp\
@@ -16,13 +16,15 @@ SOURCES += main.cpp\
     controllerinput.cpp \
     viewmodel.cpp \
     mocmodel.cpp \
-    loader.cpp
+    loader.cpp \
+    logger.cpp
 
 HEADERS  += mainwindow.h\
     controllerinput.h \
     viewmodel.h \
     mocmodel.h \
-    loader.h
+    loader.h \
+    logger.h
 
 
 FORMS    += mainwindow.ui

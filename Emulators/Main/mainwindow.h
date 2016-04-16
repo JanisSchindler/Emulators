@@ -9,6 +9,7 @@
 #include "viewmodel.h"
 #include "mocmodel.h"
 #include "loader.h"
+#include "logger.h"
 
 namespace Ui {
 class MainWindow;
@@ -27,7 +28,6 @@ protected:
 
 private:
     Ui::MainWindow *mUi;
-    ControllerInput *mInput;
     ViewModel *mModel;
     void updateRomList();
 

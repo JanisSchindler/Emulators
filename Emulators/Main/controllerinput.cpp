@@ -13,7 +13,7 @@ WINAPI DWORD GetStateStub(DWORD, XINPUT_STATE*)
 
 GetStateFunc mGetState = GetStateStub;
 short mRepeats = 0;
-HINSTANCE mXinputInstance = NULL;
+
 
 // initialize static variable for singleton
 ControllerInput* ControllerInput::sInstance = NULL;
@@ -38,7 +38,7 @@ ControllerInput::ControllerInput()
   if(mXinputInstance == NULL)
   {
     error = GetLastError();
-    qDebug() << "Error on LoadLibrary" << error;
+    Logger::getInstance()->log("Error on LoadLibary " + error);
     return;
   }
   // assign the real function
@@ -46,7 +46,7 @@ ControllerInput::ControllerInput()
   if (mGetState == NULL)
   {
     error = GetLastError();
-    qDebug() << "Error accessing XInputGetState" << error;
+    Logger::getInstance()->log("Error accessing XInputGetState " + error);
     return;
   }
 
@@ -83,12 +83,18 @@ ControllerInput::ControllerInput()
   mPt_Timer->start(50);
 }
 
-ControllerInput::~ControllerInput()
+
+void ControllerInput::cleanup()
 {
-  mPt_Timer->disconnect();
-  mPt_Timer->stop();
-  delete mPt_Timer;
-  FreeLibrary(mXinputInstance);
+  if (NULL == sInstance)
+  {
+    return;
+  }
+  sInstance->mPt_Timer->disconnect();
+  sInstance->mPt_Timer->stop();
+  delete sInstance->mPt_Timer;
+  FreeLibrary(sInstance->mXinputInstance);
+  sInstance = NULL;
 }
 
 Input::Keys SetFlag(Input::Keys current, Input::Keys added)
@@ -107,7 +113,7 @@ void ControllerInput::onTimer()
   DWORD result = mGetState(mFoundController, &mControllerState);
   if (result != ERROR_SUCCESS)
   {
-    qDebug() << "Error onTimer" << result;
+    Logger::getInstance()->log("Error onTimer "+ result);
     return;
   }
   WORD buttons = mControllerState.Gamepad.wButtons;
@@ -180,5 +186,4 @@ void ControllerInput::onTimer()
   mRepeats = 0;
   keyPressed(keys);
   mCurrentKey = keys;
- // qDebug() << "Input sent: " << keys;
 }

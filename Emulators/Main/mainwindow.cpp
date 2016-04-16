@@ -7,12 +7,17 @@ MainWindow::MainWindow(char *argv[], QWidget *parent) :
   QMainWindow(parent),
   mUi(new Ui::MainWindow)
 {
+  // init logging
+  QString logFile = QString(argv[0]);
+  logFile.append(".log");
+  Logger::getInstance(logFile)->log("Starting...");
+
   mModel = new ViewModel();
 
   mUi->setupUi(this);
-  mInput = ControllerInput::getInstance();
-
   Loader::Load(argv[0], mModel);
+
+
   if (mModel->getEmulatorCount() <= 0)
   {
     mUi->mListEmulators->addItem("Failed to load any emulator");
@@ -31,7 +36,7 @@ MainWindow::MainWindow(char *argv[], QWidget *parent) :
   }
 
   // connect signals
-  connect(mInput, SIGNAL(keyPressed(Input::Keys)), this, SLOT(onControllerInput(Input::Keys)));
+  connect(ControllerInput::getInstance(), SIGNAL(keyPressed(Input::Keys)), this, SLOT(onControllerInput(Input::Keys)));
   connect(mUi->mListEmulators, SIGNAL(currentRowChanged(int)), this, SLOT(onCurrentRowChanged(int)));
   connect(mUi->mListRoms, SIGNAL(itemDoubleClicked(QListWidgetItem*)),
           this, SLOT(onRomListItemDoubleClicked(QListWidgetItem*)));
@@ -44,10 +49,12 @@ MainWindow::MainWindow(char *argv[], QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
-  disconnect(mInput, SIGNAL(keyPressed(Input::Keys)), this, SLOT(onControllerInput(Input::Keys)));
+  disconnect(ControllerInput::getInstance(), SIGNAL(keyPressed(Input::Keys)), this, SLOT(onControllerInput(Input::Keys)));
   disconnect(mUi->mListEmulators, SIGNAL(currentRowChanged(int)), this, SLOT(onCurrentRowChanged(int)));
+  disconnect(mUi->mListRoms, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(onRomListItemDoubleClicked(QListWidgetItem*)));
   delete mUi;
-  delete mInput;
+  ControllerInput::cleanup();
+  Logger::cleanup();
   delete mModel;
 }
 
@@ -80,53 +87,60 @@ void HandleNavigationKeys(Input::Keys keys, QListWidget* list)
 
 void StartROM(const Emulator* emulator, const ROM* rom)
 {
-  LPCWSTR applicationName = emulator->executablePath;
+  try
+  {
+    LPCWSTR applicationName = emulator->executablePath;
 
-  QString commandLine = QString::fromStdWString(emulator->executablePath);
-  commandLine.append(" ");
-  commandLine.append(QString::fromStdWString(emulator->arguments));
+    QString commandLine = QString::fromStdWString(emulator->executablePath);
+    commandLine.append(" ");
+    commandLine.append(QString::fromStdWString(emulator->arguments));
 
-  // build command line -> replace the <rom> macro and put it in hyphens
-  // add a space - some programs seem to require it
-  QString romPath(" \"");
-  romPath.append(QString::fromStdWString(rom->path));
-  romPath.append("\"");
-  commandLine.replace("<ROM>", romPath, Qt::CaseInsensitive);
-  qDebug() << commandLine;
+    // build command line -> replace the <rom> macro and put it in hyphens
+    // add a space - some programs seem to require it
+    QString romPath(" \"");
+    romPath.append(QString::fromStdWString(rom->path));
+    romPath.append("\"");
+    commandLine.replace("<ROM>", romPath, Qt::CaseInsensitive);
+    Logger::getInstance()->log("CommandLine: " + commandLine);
 
-  int length = commandLine.length() + 1;
 
-  LPWSTR wcharCmdLine = new wchar_t[length];
+    int length = commandLine.length() + 1;
 
-  commandLine.toWCharArray(wcharCmdLine);
-  wcharCmdLine[length - 1] = '\0';
-  // additional information
-  STARTUPINFO si;
-  PROCESS_INFORMATION pi;
+    LPWSTR wcharCmdLine = new wchar_t[length];
 
-  // set the size of the structures
-  ZeroMemory( &si, sizeof(si) );
-  si.cb = sizeof(si);
-  ZeroMemory( &pi, sizeof(pi) );
+    commandLine.toWCharArray(wcharCmdLine);
+    wcharCmdLine[length - 1] = '\0';
+    // additional information
+    STARTUPINFO si;
+    PROCESS_INFORMATION pi;
 
-  // start the program up
-  CreateProcess(applicationName,   // the path
-                wcharCmdLine,        // Command line
-                NULL,           // Process handle not inheritable
-                NULL,           // Thread handle not inheritable
-                FALSE,          // Set handle inheritance to FALSE
-                0,              // No creation flags
-                NULL,           // Use parent's environment block
-                NULL,           // Use parent's starting directory
-                &si,            // Pointer to STARTUPINFO structure
-                &pi);          // Pointer to PROCESS_INFORMATION structure
+    // set the size of the structures
+    ZeroMemory( &si, sizeof(si) );
+    si.cb = sizeof(si);
+    ZeroMemory( &pi, sizeof(pi) );
 
-  // Close process and thread handles, remember id
-  mAppHandleId = (pi.dwProcessId);
-  CloseHandle(pi.hProcess);
-  CloseHandle(pi.hThread);
+    // start the program up
+    CreateProcess(applicationName,   // the path
+                  wcharCmdLine,        // Command line
+                  NULL,           // Process handle not inheritable
+                  NULL,           // Thread handle not inheritable
+                  FALSE,          // Set handle inheritance to FALSE
+                  0,              // No creation flags
+                  NULL,           // Use parent's environment block
+                  NULL,           // Use parent's starting directory
+                  &si,            // Pointer to STARTUPINFO structure
+                  &pi);          // Pointer to PROCESS_INFORMATION structure
+
+    // Close process and thread handles, remember id
+    mAppHandleId = (pi.dwProcessId);
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+  }
+  catch(...)
+  {
+    Logger::getInstance()->log("Error starting emulator");
+  }
 }
-
 
 void MainWindow::onRomListItemDoubleClicked(QListWidgetItem* item)
 {
@@ -184,7 +198,7 @@ WINBOOL CALLBACK findAndKill (HWND hwnd, LPARAM lParam)
   GetWindowThreadProcessId (hwnd, &procid);
   if (0 != mAppHandleId && procid == mAppHandleId)
   {
-    qDebug() << "Process seemed not to react to WM_CLOSE";
+    Logger::getInstance()->log("Process seemed not to react to WM_CLOSE");
     // close the emulator
     TerminateProcess(hwnd, 0);
     return FALSE; // found and stopped
@@ -200,17 +214,25 @@ void MainWindow::onControllerInput(Input::Keys keys)
   }
   if (keys & Input::Exit && 0 != mAppHandleId)
   {
-    // try the nice way (send WM_CLOSE)
-    EnumWindows(findAndClose, 0);
-    Sleep(1000);
-    // dolphin workaround -> send esc
-    EnumWindows(findAndEscape, 0);
-    Sleep(1000);
-    // try the not so nice way (TerminateProcess)
-    EnumWindows(findAndKill, 0);
-    // reset handle
-    mAppHandleId = 0;
-    return;
+    try
+      {
+      // try the nice way (send WM_CLOSE)
+      EnumWindows(findAndClose, 0);
+      Sleep(1000);
+      // dolphin workaround -> send esc
+      EnumWindows(findAndEscape, 0);
+      Sleep(1000);
+      // try the not so nice way (TerminateProcess)
+      EnumWindows(findAndKill, 0);
+      // reset handle
+      mAppHandleId = 0;
+
+      return;
+      }
+    catch(...)
+    {
+      Logger::getInstance()->log("Error closing emulator");
+    }
   }
   // exit this progrma
   if (keys & Input::Exit && keys & Input::Accept && 0 == mAppHandleId &&

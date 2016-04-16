@@ -1,12 +1,13 @@
 #ifndef INPUT_H
 #define INPUT_H
 
+#include <QObject>
+#include <QTimer>
 #include <xinput.h>
 #include <windows.h>
 #include <winerror.h>
-#include <qobject.h>
-#include <qtimer.h>
-#include <qdebug.h>
+
+#include "logger.h"
 
 namespace Input
 {
@@ -32,7 +33,7 @@ class ControllerInput : public QObject
 
 public:
     static ControllerInput* getInstance();
-    ~ControllerInput();
+    static void cleanup();
 
 signals:
     keyPressed(Input::Keys keys);
@@ -45,6 +46,7 @@ private:
     int mFoundController;
     QTimer* mPt_Timer;
     Input::Keys mCurrentKey;
+    HINSTANCE mXinputInstance = NULL;
 
 private slots:
     void onTimer();

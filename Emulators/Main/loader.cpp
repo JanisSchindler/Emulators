@@ -82,7 +82,7 @@ void LoadRomsForEmulator(Emulator* emulator, ViewModel* model)
   HANDLE handle;
   WIN32_FIND_DATA findIniFile;
 
-  qDebug() << "ini file pattern " << QString::fromWCharArray(pattern, wcslen(pattern));
+  Logger::getInstance()->log("ini file pattern " + QString::fromWCharArray(pattern, wcslen(pattern)));
 
   handle = FindFirstFile(pattern, &findIniFile);
   if (handle == INVALID_HANDLE_VALUE || handle == 0)
@@ -159,7 +159,7 @@ void LoadRomsForEmulator(Emulator* emulator, ViewModel* model)
   {
     path.append('\\');
   }
-  qDebug() << "root folder for rom lookup: " << path;
+  Logger::getInstance()->log("root folder for rom lookup: " + path);
 
   // read Command Line arguments for this emulator
   res = GetPrivateProfileString
@@ -267,7 +267,7 @@ void Loader::Load(char exePath[], ViewModel* model)
   wchar_t* pattern;
   ConcatenateStrings(pathRoot, L"*.ini", pattern);
 
-  qDebug() << "pattern: " << QString::fromWCharArray(pattern, wcslen(pattern));
+  Logger::getInstance()->log("pattern: " + QString::fromWCharArray(pattern, wcslen(pattern)));
 
   handle = FindFirstFile(pattern, &findIniFile);
   if (handle == INVALID_HANDLE_VALUE || handle == 0)
@@ -290,7 +290,7 @@ void Loader::Load(char exePath[], ViewModel* model)
   FindClose(handle);
 
   rootDir = new wchar_t[MAX_PATH - 1];
-  qDebug() << "ini: " << QString::fromWCharArray(iniFile, wcslen(iniFile));
+  Logger::getInstance()->log( "ini: " + QString::fromWCharArray(iniFile, wcslen(iniFile)));
   DWORD res = GetPrivateProfileString
       (
         L"Emulators",    // section
