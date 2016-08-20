@@ -1,11 +1,13 @@
-16.04.2016/12:40:50	Starting...
-16.04.2016/12:40:50	pattern: C:\Users\janis\Documents\GitHub\Emulators\Release\Main\release\*.ini
-16.04.2016/12:40:50	ini: C:\Users\janis\Documents\GitHub\Emulators\Release\Main\release\Emulators.ini
-16.04.2016/12:40:50	ini file pattern D:\Emulators\Gamecube\*.ini
-16.04.2016/12:40:50	root folder for rom lookup: D:\Emulators\Gamecube\ROMS\
-16.04.2016/12:40:50	ini file pattern D:\Emulators\N64\*.ini
-16.04.2016/12:40:50	root folder for rom lookup: D:\Emulators\N64\ROMS\
-16.04.2016/12:40:50	ini file pattern D:\Emulators\Sega\*.ini
-16.04.2016/12:40:50	root folder for rom lookup: D:\Emulators\Sega\ROMS\
-16.04.2016/12:40:50	ini file pattern D:\Emulators\SNES\*.ini
-16.04.2016/12:40:50	root folder for rom lookup: D:\Emulators\SNES\ROMS\
+20.08.2016/13:26:11	Starting...
+20.08.2016/13:26:11	pattern: C:\Users\janis\Documents\GitHub\Emulators\Release\Main\release\*.ini
+20.08.2016/13:26:11	ini: C:\Users\janis\Documents\GitHub\Emulators\Release\Main\release\Emulators.ini
+20.08.2016/13:26:11	ini file pattern D:\Emulators\Gamecube\*.ini
+20.08.2016/13:26:11	root folder for rom lookup: D:\Emulators\Gamecube\ROMS\
+20.08.2016/13:26:11	ini file pattern D:\Emulators\N64\*.ini
+20.08.2016/13:26:11	root folder for rom lookup: D:\Emulators\N64\ROMS\
+20.08.2016/13:26:11	ini file pattern D:\Emulators\Sega\*.ini
+20.08.2016/13:26:11	root folder for rom lookup: D:\Emulators\Sega\ROMS\
+20.08.2016/13:26:11	ini file pattern D:\Emulators\SNES\*.ini
+20.08.2016/13:26:11	root folder for rom lookup: D:\Emulators\SNES\ROMS\
+20.08.2016/13:26:11	Found controller in slot 1
+20.08.2016/13:26:11	Found controller in slot 2

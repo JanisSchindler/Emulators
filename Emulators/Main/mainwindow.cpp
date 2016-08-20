@@ -208,7 +208,7 @@ WINBOOL CALLBACK findAndKill (HWND hwnd, LPARAM lParam)
 
 void MainWindow::onControllerInput(Input::Keys keys)
 {
-  if (keys == Input::None)
+  if (keys == Input::KeysNone)
   {
     return;
   }

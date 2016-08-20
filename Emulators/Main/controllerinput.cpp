@@ -14,6 +14,26 @@ WINAPI DWORD GetStateStub(DWORD, XINPUT_STATE*)
 GetStateFunc mGetState = GetStateStub;
 short mRepeats = 0;
 
+// Flag helpers (note that c++ enums are integers in disguise)
+Input::Keys SetFlag(Input::Keys current, Input::Keys added)
+{
+  return static_cast<Input::Keys>( static_cast<int> (current) | static_cast<int> (added));
+}
+
+Input::Keys ResetFlag(Input::Keys current,Input::Keys removed)
+{
+  return static_cast<Input::Keys>( static_cast<int> (current) & ~static_cast<int> (removed));
+}
+
+Input::Players SetFlag(Input::Players current, Input::Players added)
+{
+  return static_cast<Input::Players>( static_cast<int> (current) | static_cast<int> (added));
+}
+
+Input::Players ResetFlag(Input::Players current,Input::Players removed)
+{
+  return static_cast<Input::Players>( static_cast<int> (current) & ~static_cast<int> (removed));
+}
 
 // initialize static variable for singleton
 ControllerInput* ControllerInput::sInstance = NULL;
@@ -30,7 +50,7 @@ ControllerInput::ControllerInput()
 {
   mRepeats = 0;
   // signal no controller found
-  mFoundController = -1;
+  mFoundPlayers = Input::PlayersNone;
   // try to load the real function
   mXinputInstance = LoadLibrary(L"XInput9_1_0.dll");
   DWORD error;
@@ -54,26 +74,55 @@ ControllerInput::ControllerInput()
   ZeroMemory(&mControllerState, sizeof(XINPUT_STATE));
 
   // check if any controller is connected and use that
-  for (int i = 0; i < 20; ++i)
+  for (int i = 0; i < 10; ++i)
   {
-    if (mFoundController >= 0)
-    {
-      break;
-    }
     for (int j = 0; j < 4; ++j)
     {
       DWORD result = mGetState(j, &mControllerState);
       if (result == ERROR_SUCCESS)
       {
         // found one
-        mFoundController = j;
-        break;
+        switch(j)
+        {
+          case 0:
+           if (mFoundPlayers & Input::P1)
+           {
+             break;
+           }
+           mFoundPlayers = SetFlag(mFoundPlayers, Input::P1);
+           Logger::getInstance()->log("Found controller in slot 1");
+           break;
+          case 1:
+            if (mFoundPlayers & Input::P2)
+            {
+              break;
+            }
+            mFoundPlayers = SetFlag(mFoundPlayers, Input::P2);
+            Logger::getInstance()->log("Found controller in slot 2");
+            break;
+          case 2:
+            if (mFoundPlayers & Input::P3)
+            {
+              break;
+            }
+            mFoundPlayers = SetFlag(mFoundPlayers, Input::P3);
+            Logger::getInstance()->log("Found controller in slot 3");
+            break;
+          case 3:
+            if (mFoundPlayers & Input::P4)
+            {
+              break;
+            }
+            mFoundPlayers = SetFlag(mFoundPlayers, Input::P4);
+            Logger::getInstance()->log("Found controller in slot 4");
+            break;
+        }
       }
-      // wait for 5 seconds total
-      Sleep(250);
+      // wait for .5 seconds total
+      Sleep(50);
     }
   }
-  if (mFoundController < 0)
+  if (mFoundPlayers == Input::PlayersNone)
   {
     return;
   }
@@ -83,41 +132,35 @@ ControllerInput::ControllerInput()
   mPt_Timer->start(50);
 }
 
-
 void ControllerInput::cleanup()
 {
   if (NULL == sInstance)
   {
     return;
   }
-  sInstance->mPt_Timer->disconnect();
-  sInstance->mPt_Timer->stop();
-  delete sInstance->mPt_Timer;
+  if (sInstance->mFoundPlayers != Input::PlayersNone)
+  {
+    sInstance->mPt_Timer->disconnect();
+    sInstance->mPt_Timer->stop();
+    delete sInstance->mPt_Timer;
+  }
   FreeLibrary(sInstance->mXinputInstance);
   sInstance = NULL;
 }
 
-Input::Keys SetFlag(Input::Keys current, Input::Keys added)
+Input::Keys doOnTimer(PXINPUT_STATE state, GetStateFunc func, int playerNo)
 {
-  return static_cast<Input::Keys>( static_cast<int> (current) | static_cast<int> (added));
-}
-
-Input::Keys ResetFlag(Input::Keys current,Input::Keys removed)
-{
-  return static_cast<Input::Keys>( static_cast<int> (current) & ~static_cast<int> (removed));
-}
-
-void ControllerInput::onTimer()
-{
-  ZeroMemory(&mControllerState, sizeof(XINPUT_STATE));
-  DWORD result = mGetState(mFoundController, &mControllerState);
+  ZeroMemory(state, sizeof(XINPUT_STATE));
+  DWORD result = func(playerNo, state);
   if (result != ERROR_SUCCESS)
   {
-    Logger::getInstance()->log("Error onTimer "+ result);
-    return;
+    QString error;
+    error.sprintf(("Error in onTimer: %lu"), result);
+    Logger::getInstance()->logOnce(error, 0x0001);
+    return Input::KeysNone;
   }
-  WORD buttons = mControllerState.Gamepad.wButtons;
-  Input::Keys keys = Input::None;
+  WORD buttons = state->Gamepad.wButtons;
+  Input::Keys keys = Input::KeysNone;
   if (buttons & XINPUT_GAMEPAD_A || buttons & XINPUT_GAMEPAD_X)
   {
     keys = SetFlag(keys, Input::Accept);
@@ -126,7 +169,7 @@ void ControllerInput::onTimer()
   {
      keys = SetFlag(keys, Input::Back);
   }
-  short thumb = mControllerState.Gamepad.sThumbLX;
+  short thumb = state->Gamepad.sThumbLX;
   if (buttons & XINPUT_GAMEPAD_DPAD_LEFT || thumb < -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
   {
      keys = SetFlag(keys, Input::Left);
@@ -135,7 +178,7 @@ void ControllerInput::onTimer()
   {
      keys = SetFlag(keys, Input::Right);
   }
-  thumb = mControllerState.Gamepad.sThumbLY;
+  thumb = state->Gamepad.sThumbLY;
   if (buttons & XINPUT_GAMEPAD_DPAD_UP || thumb > XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
   {
      keys = SetFlag(keys, Input::Up);
@@ -152,11 +195,34 @@ void ControllerInput::onTimer()
   {
      keys = SetFlag(keys, Input::Back);
   }
-  byte trigger1 = mControllerState.Gamepad.bLeftTrigger;
-  byte trigger2 = mControllerState.Gamepad.bRightTrigger;
+  byte trigger1 = state->Gamepad.bLeftTrigger;
+  byte trigger2 = state->Gamepad.bRightTrigger;
   if (trigger1 > XINPUT_GAMEPAD_TRIGGER_THRESHOLD && trigger2 > XINPUT_GAMEPAD_TRIGGER_THRESHOLD)
   {
     keys = SetFlag(keys, Input::Exit);
+  }
+  return keys;
+}
+
+void ControllerInput::onTimer()
+{
+  Input::Keys keys = Input::KeysNone;
+
+  if (mFoundPlayers & Input::P1)
+  {
+    keys = SetFlag(keys, doOnTimer(&mControllerState, mGetState, 0));
+  }
+  if (mFoundPlayers & Input::P2)
+  {
+    keys = SetFlag(keys, doOnTimer(&mControllerState, mGetState, 1));
+  }
+  if (mFoundPlayers & Input::P3)
+  {
+    keys = SetFlag(keys, doOnTimer(&mControllerState, mGetState, 2));
+  }
+  if (mFoundPlayers & Input::P4)
+  {
+    keys = SetFlag(keys, doOnTimer(&mControllerState, mGetState, 3));
   }
 
   // some consistency thingys (reset keys if there are concurrent inputs

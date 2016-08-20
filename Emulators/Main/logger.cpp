@@ -39,8 +39,15 @@ void Logger::cleanup()
 
 Logger::Logger(const std::string logFileName)
 {
-  mLogFile = new std::ofstream();
-  mLogFile->open(logFileName.c_str());
+  try
+  {
+    mLogFile = new std::ofstream();
+    mLogFile->open(logFileName.c_str());
+  }
+  catch(...)
+  {
+    qDebug() << "Could not open file for logger";
+  }
 }
 
 void Logger::log(const QString message)
@@ -61,4 +68,16 @@ void Logger::log(const QString message)
   {
     qDebug() << "Error logging to file";
   }
+}
+
+int mFlags;
+
+void Logger::logOnce(const QString message, const int flag)
+{
+  if (mFlags & flag)
+  {
+    return;
+  }
+  mFlags |= flag;
+  log(message);
 }

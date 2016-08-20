@@ -15,15 +15,25 @@ namespace Input
 
     enum Keys
     {
-        None =   0x00,
-        Accept = 0x01,
-        Back =   0x02,
-        Up =     0x04,
-        Right =  0x08,
-        Down =   0x10,
-        Left =   0x20,
-        Start =  0x40,
-        Exit =   0x80
+        KeysNone =   0x00,
+        Accept =     0x01,
+        Back =       0x02,
+        Up =         0x04,
+        Right =      0x08,
+        Down =       0x10,
+        Left =       0x20,
+        Start =      0x40,
+        Exit =       0x80
+    };
+
+    // XInput supports up to 4 controllers
+    enum Players
+    {
+      PlayersNone = 0x00,
+      P1 =          0x01,
+      P2 =          0x02,
+      P3 =          0x04,
+      P4 =          0x08
     };
 }
 
@@ -43,7 +53,7 @@ private:
     static ControllerInput* sInstance;
 
     XINPUT_STATE mControllerState;
-    int mFoundController;
+    Input::Players mFoundPlayers;
     QTimer* mPt_Timer;
     Input::Keys mCurrentKey;
     HINSTANCE mXinputInstance = NULL;

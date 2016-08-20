@@ -27,6 +27,23 @@ void ConcatenateStrings(const wchar_t* part1, const wchar_t* part2, wchar_t*& re
   wcscat_s(result, len, part2);
 }
 
+// returns true if the ini file starts with an [EMULATOR] section
+bool CheckIniFile(QString path)
+{
+  bool result = false;
+  std::fstream fs;
+  fs.open (path.toStdString().c_str(), std::fstream::in);
+  char* line = new char[20];
+  fs.getline(line, 20);
+  if(0 == strcmp(line, "[EMULATOR]"))
+  {
+     result = true;
+  }
+  fs.close();
+  return result;
+}
+
+// in separate function so it can be used recursively
 void DoLoadRomsForEmulator(QString path, const Emulator* emulator, ViewModel* model, QString extension)
 {
   QDir dir(path);
@@ -45,22 +62,6 @@ void DoLoadRomsForEmulator(QString path, const Emulator* emulator, ViewModel* mo
       model->AddRom(emulator, rom);
     }
   }
-}
-
-// returns true if the ini file starts with an [EMULATOR] section
-bool CheckIniFile(QString path)
-{
-  bool result = false;
-  std::fstream fs;
-  fs.open (path.toStdString().c_str(), std::fstream::in);
-  char* line = new char[20];
-  fs.getline(line, 20);
-  if(0 == strcmp(line, "[EMULATOR]"))
-  {
-     result = true;
-  }
-  fs.close();
-  return result;
 }
 
 // loads the settings from the emulator ini file and
