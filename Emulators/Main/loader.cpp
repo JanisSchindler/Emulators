@@ -1,6 +1,6 @@
 #include "loader.h"
 
-void CopyString(const char* from, wchar_t* to, uint count, bool terminate)
+void Loader::copyString(const char* from, wchar_t* to, uint count, bool terminate)
 {
   // is there a convenient way to copy char* to wchar_t* ?
   for (uint i = 0; i < count; ++i)
@@ -19,7 +19,7 @@ void CopyString(const char* from, wchar_t* to, uint count, bool terminate)
 }
 
 // creates a string -> delete after use!
-void ConcatenateStrings(const wchar_t* part1, const wchar_t* part2, wchar_t*& result)
+void Loader::concatenateStrings(const wchar_t* part1, const wchar_t* part2, wchar_t*& result)
 {
   int len = wcslen(part1) + wcslen(part2) + 1;
   result = new wchar_t[len];
@@ -28,7 +28,7 @@ void ConcatenateStrings(const wchar_t* part1, const wchar_t* part2, wchar_t*& re
 }
 
 // returns true if the ini file starts with an [EMULATOR] section
-bool CheckIniFile(QString path)
+bool Loader::checkIniFile(QString path)
 {
   bool result = false;
   std::fstream fs;
@@ -44,7 +44,7 @@ bool CheckIniFile(QString path)
 }
 
 // in separate function so it can be used recursively
-void DoLoadRomsForEmulator(QString path, const Emulator* emulator, ViewModel* model, QString extension)
+void Loader::doLoadRomsForEmulator(QString path, const Emulator* emulator, ViewModel* model, QString extension)
 {
   QDir dir(path);
   QFileInfoList infos = dir.entryInfoList(QDir::NoDotAndDotDot | QDir::Dirs | QDir::Files);
@@ -52,7 +52,7 @@ void DoLoadRomsForEmulator(QString path, const Emulator* emulator, ViewModel* mo
   {
     if (infos[i].isDir())
     {
-      DoLoadRomsForEmulator(infos[i].absoluteFilePath(), emulator, model, extension);
+      doLoadRomsForEmulator(infos[i].absoluteFilePath(), emulator, model, extension);
     }
     if(infos[i].completeSuffix() == extension)
     {
@@ -66,7 +66,7 @@ void DoLoadRomsForEmulator(QString path, const Emulator* emulator, ViewModel* mo
 
 // loads the settings from the emulator ini file and
 // adds the ROMS to the model
-void LoadRomsForEmulator(Emulator* emulator, ViewModel* model)
+void Loader::loadRomsForEmulator(Emulator* emulator, ViewModel* model)
 {
   // search for another ini file inside the emulator folder
   QFileInfo file(QString::fromWCharArray(emulator->executablePath));
@@ -78,7 +78,7 @@ void LoadRomsForEmulator(Emulator* emulator, ViewModel* model)
   }
 
   wchar_t* pattern;
-  ConcatenateStrings(path.toStdWString().c_str(), L"*.ini", pattern);
+  concatenateStrings(path.toStdWString().c_str(), L"*.ini", pattern);
 
   HANDLE handle;
   WIN32_FIND_DATA findIniFile;
@@ -98,7 +98,7 @@ void LoadRomsForEmulator(Emulator* emulator, ViewModel* model)
 
   bool found = true;
   // check if the correct ini file is used
-  if (!CheckIniFile(path))
+  if (!checkIniFile(path))
   {
     found = false;
     for (int i=0; i<255; ++i)
@@ -107,7 +107,7 @@ void LoadRomsForEmulator(Emulator* emulator, ViewModel* model)
       {
         path = QString(originalPath);
         path.append(QString::fromWCharArray(findIniFile.cFileName));
-        if (!CheckIniFile(path))
+        if (!checkIniFile(path))
         {
           continue;
         }
@@ -127,7 +127,7 @@ void LoadRomsForEmulator(Emulator* emulator, ViewModel* model)
 
 
   wchar_t* iniFile;
-  ConcatenateStrings(path.toStdWString().c_str(), findIniFile.cFileName, iniFile);
+  concatenateStrings(path.toStdWString().c_str(), findIniFile.cFileName, iniFile);
 
   // buffer
   wchar_t* iniEntry = new wchar_t[MAX_PATH - 1];
@@ -182,7 +182,7 @@ void LoadRomsForEmulator(Emulator* emulator, ViewModel* model)
 
   wchar_t* currentName = new wchar_t[100];
   wchar_t* newName = new wchar_t[100];
-  CopyString(emulator->name.c_str(), currentName, emulator->name.length() + 1, true);
+  copyString(emulator->name.c_str(), currentName, emulator->name.length() + 1, true);
 
   // read Display Name arguments for this emulator
   res = GetPrivateProfileString
@@ -203,20 +203,20 @@ void LoadRomsForEmulator(Emulator* emulator, ViewModel* model)
   delete currentName;
   delete newName;
   delete iniFile;
-  DoLoadRomsForEmulator(path, emulator, model, extension);
+  doLoadRomsForEmulator(path, emulator, model, extension);
 }
 
 // search recursively in root for .exefiles for emulators
 // those then should contain the path and extension for their roms
 // as well as the command line parameters that are required
-void LoadEmulatorsInDirectory(QDir dir, ViewModel* model)
+void Loader::loadEmulatorsInDirectory(QDir dir, ViewModel* model)
 {
   QFileInfoList infos = dir.entryInfoList(QDir::NoDotAndDotDot | QDir::Dirs | QDir::Files);
   for(int i = 0; i < infos.length(); ++i)
   {
     if(infos[i].isDir())
     {
-      LoadEmulatorsInDirectory(infos[i].absoluteFilePath(), model);
+      loadEmulatorsInDirectory(infos[i].absoluteFilePath(), model);
     }
     if (!infos[i].isFile())
     {
@@ -235,12 +235,12 @@ void LoadEmulatorsInDirectory(QDir dir, ViewModel* model)
       e->executablePath = p;
       e->name = infos[i].baseName().toStdString();
       model->AddEmulator(e);
-      LoadRomsForEmulator(e, model);
+      loadRomsForEmulator(e, model);
     }
   }
 }
 
-void Loader::Load(char exePath[], ViewModel* model)
+void Loader::load(char exePath[], ViewModel* model)
 {
   wchar_t* rootDir;
   QDir dir;
@@ -263,10 +263,10 @@ void Loader::Load(char exePath[], ViewModel* model)
   }
 
   wchar_t pathRoot[pathLen + 1];
-  CopyString(exePath, pathRoot, pathLen + 1, true);
+  copyString(exePath, pathRoot, pathLen + 1, true);
 
   wchar_t* pattern;
-  ConcatenateStrings(pathRoot, L"*.ini", pattern);
+  concatenateStrings(pathRoot, L"*.ini", pattern);
 
   Logger::getInstance()->log("pattern: " + QString::fromWCharArray(pattern, wcslen(pattern)));
 
@@ -275,11 +275,11 @@ void Loader::Load(char exePath[], ViewModel* model)
   {
     // try program folder as root folder
     rootDir = new wchar_t[pathLen + 1];
-    CopyString(exePath, rootDir, pathLen + 1, true);
+    copyString(exePath, rootDir, pathLen + 1, true);
     delete pattern;
     dir = QDir(QString::fromWCharArray(rootDir));
     delete rootDir;
-    LoadEmulatorsInDirectory(dir, model);
+    loadEmulatorsInDirectory(dir, model);
     return;
   }
   // else use the path in the ini file
@@ -287,7 +287,7 @@ void Loader::Load(char exePath[], ViewModel* model)
   // note that findIniFile contains a file NAME
 
   wchar_t* iniFile;
-  ConcatenateStrings(pathRoot, findIniFile.cFileName, iniFile);
+  concatenateStrings(pathRoot, findIniFile.cFileName, iniFile);
   FindClose(handle);
 
   rootDir = new wchar_t[MAX_PATH - 1];
@@ -305,12 +305,12 @@ void Loader::Load(char exePath[], ViewModel* model)
   {
     // try program folder as root folder
     rootDir = new wchar_t[res + 1];
-    CopyString(exePath, rootDir, res + 1, true);
+    copyString(exePath, rootDir, res + 1, true);
   }
 
   delete pattern;
   delete iniFile;
   dir = QDir(QString::fromWCharArray(rootDir));
   delete rootDir;
-  LoadEmulatorsInDirectory(dir, model);
+  loadEmulatorsInDirectory(dir, model);
 }

@@ -1,36 +1,22 @@
 #include "controllerinput.h"
 
-// define stub of the method we want to import
-// First get a convenient typedef
-typedef WINAPI DWORD (*GetStateFunc)(DWORD, XINPUT_STATE*);
-
-// next declare a stub which at least does not crash the program
-WINAPI DWORD GetStateStub(DWORD, XINPUT_STATE*)
-{
-  return 0;
-}
-// and assign it as default
-
-GetStateFunc mGetState = GetStateStub;
-short mRepeats = 0;
-
-// Flag helpers (note that c++ enums are integers in disguise)
-Input::Keys SetFlag(Input::Keys current, Input::Keys added)
+// note that c++ enums are integers in disguise
+Input::Keys ControllerInput::setFlag(Input::Keys current, Input::Keys added)
 {
   return static_cast<Input::Keys>( static_cast<int> (current) | static_cast<int> (added));
 }
 
-Input::Keys ResetFlag(Input::Keys current,Input::Keys removed)
+Input::Keys ControllerInput::resetFlag(Input::Keys current,Input::Keys removed)
 {
   return static_cast<Input::Keys>( static_cast<int> (current) & ~static_cast<int> (removed));
 }
 
-Input::Players SetFlag(Input::Players current, Input::Players added)
+Input::Players ControllerInput::setFlag(Input::Players current, Input::Players added)
 {
   return static_cast<Input::Players>( static_cast<int> (current) | static_cast<int> (added));
 }
 
-Input::Players ResetFlag(Input::Players current,Input::Players removed)
+Input::Players ControllerInput::resetFlag(Input::Players current,Input::Players removed)
 {
   return static_cast<Input::Players>( static_cast<int> (current) & ~static_cast<int> (removed));
 }
@@ -61,7 +47,7 @@ ControllerInput::ControllerInput()
     Logger::getInstance()->log("Error on LoadLibary " + error);
     return;
   }
-  // assign the real function
+  // assign the function
   mGetState = (GetStateFunc)GetProcAddress(mXinputInstance, "XInputGetState");
   if (mGetState == NULL)
   {
@@ -89,7 +75,7 @@ ControllerInput::ControllerInput()
            {
              break;
            }
-           mFoundPlayers = SetFlag(mFoundPlayers, Input::P1);
+           mFoundPlayers = setFlag(mFoundPlayers, Input::P1);
            Logger::getInstance()->log("Found controller in slot 1");
            break;
           case 1:
@@ -97,7 +83,7 @@ ControllerInput::ControllerInput()
             {
               break;
             }
-            mFoundPlayers = SetFlag(mFoundPlayers, Input::P2);
+            mFoundPlayers = setFlag(mFoundPlayers, Input::P2);
             Logger::getInstance()->log("Found controller in slot 2");
             break;
           case 2:
@@ -105,7 +91,7 @@ ControllerInput::ControllerInput()
             {
               break;
             }
-            mFoundPlayers = SetFlag(mFoundPlayers, Input::P3);
+            mFoundPlayers = setFlag(mFoundPlayers, Input::P3);
             Logger::getInstance()->log("Found controller in slot 3");
             break;
           case 3:
@@ -113,7 +99,7 @@ ControllerInput::ControllerInput()
             {
               break;
             }
-            mFoundPlayers = SetFlag(mFoundPlayers, Input::P4);
+            mFoundPlayers = setFlag(mFoundPlayers, Input::P4);
             Logger::getInstance()->log("Found controller in slot 4");
             break;
         }
@@ -148,7 +134,7 @@ void ControllerInput::cleanup()
   sInstance = NULL;
 }
 
-Input::Keys doOnTimer(PXINPUT_STATE state, GetStateFunc func, int playerNo)
+Input::Keys ControllerInput::doOnTimer(PXINPUT_STATE state, GetStateFunc func, int playerNo)
 {
   ZeroMemory(state, sizeof(XINPUT_STATE));
   DWORD result = func(playerNo, state);
@@ -163,43 +149,43 @@ Input::Keys doOnTimer(PXINPUT_STATE state, GetStateFunc func, int playerNo)
   Input::Keys keys = Input::KeysNone;
   if (buttons & XINPUT_GAMEPAD_A || buttons & XINPUT_GAMEPAD_X)
   {
-    keys = SetFlag(keys, Input::Accept);
+    keys = setFlag(keys, Input::Accept);
   }
   if (buttons & XINPUT_GAMEPAD_B || buttons & XINPUT_GAMEPAD_Y)
   {
-     keys = SetFlag(keys, Input::Back);
+     keys = setFlag(keys, Input::Back);
   }
   short thumb = state->Gamepad.sThumbLX;
   if (buttons & XINPUT_GAMEPAD_DPAD_LEFT || thumb < -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
   {
-     keys = SetFlag(keys, Input::Left);
+     keys = setFlag(keys, Input::Left);
   }
   if (buttons & XINPUT_GAMEPAD_DPAD_RIGHT || thumb > XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
   {
-     keys = SetFlag(keys, Input::Right);
+     keys = setFlag(keys, Input::Right);
   }
   thumb = state->Gamepad.sThumbLY;
   if (buttons & XINPUT_GAMEPAD_DPAD_UP || thumb > XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
   {
-     keys = SetFlag(keys, Input::Up);
+     keys = setFlag(keys, Input::Up);
   }
   if (buttons & XINPUT_GAMEPAD_DPAD_DOWN || thumb < -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
   {
-     keys = SetFlag(keys, Input::Down);
+     keys = setFlag(keys, Input::Down);
   }
   if (buttons & XINPUT_GAMEPAD_START)
   {
-     keys = SetFlag(keys, Input::Start);
+     keys = setFlag(keys, Input::Start);
   }
   if (buttons & XINPUT_GAMEPAD_BACK)
   {
-     keys = SetFlag(keys, Input::Back);
+     keys = setFlag(keys, Input::Back);
   }
   byte trigger1 = state->Gamepad.bLeftTrigger;
   byte trigger2 = state->Gamepad.bRightTrigger;
   if (trigger1 > XINPUT_GAMEPAD_TRIGGER_THRESHOLD && trigger2 > XINPUT_GAMEPAD_TRIGGER_THRESHOLD)
   {
-    keys = SetFlag(keys, Input::Exit);
+    keys = setFlag(keys, Input::Exit);
   }
   return keys;
 }
@@ -210,36 +196,36 @@ void ControllerInput::onTimer()
 
   if (mFoundPlayers & Input::P1)
   {
-    keys = SetFlag(keys, doOnTimer(&mControllerState, mGetState, 0));
+    keys = setFlag(keys, doOnTimer(&mControllerState, mGetState, 0));
   }
   if (mFoundPlayers & Input::P2)
   {
-    keys = SetFlag(keys, doOnTimer(&mControllerState, mGetState, 1));
+    keys = setFlag(keys, doOnTimer(&mControllerState, mGetState, 1));
   }
   if (mFoundPlayers & Input::P3)
   {
-    keys = SetFlag(keys, doOnTimer(&mControllerState, mGetState, 2));
+    keys = setFlag(keys, doOnTimer(&mControllerState, mGetState, 2));
   }
   if (mFoundPlayers & Input::P4)
   {
-    keys = SetFlag(keys, doOnTimer(&mControllerState, mGetState, 3));
+    keys = setFlag(keys, doOnTimer(&mControllerState, mGetState, 3));
   }
 
-  // some consistency thingys (reset keys if there are concurrent inputs
+  // some consistency thingys (reset keys if there are concurrent inputs)
   if (keys & Input::Accept && keys & Input::Back)
   {
-    keys = ResetFlag(keys, Input::Accept);
-    keys = ResetFlag(keys, Input::Back);
+    keys = resetFlag(keys, Input::Accept);
+    keys = resetFlag(keys, Input::Back);
   }
   if (keys & Input::Up && keys & Input::Down)
   {
-    keys = ResetFlag(keys, Input::Up);
-    keys = ResetFlag(keys, Input::Down);
+    keys = resetFlag(keys, Input::Up);
+    keys = resetFlag(keys, Input::Down);
   }
   if (keys & Input::Left && keys & Input::Right)
   {
-    keys = ResetFlag(keys, Input::Left);
-    keys = ResetFlag(keys, Input::Right);
+    keys = resetFlag(keys, Input::Left);
+    keys = resetFlag(keys, Input::Right);
   }
   if (keys == mCurrentKey)
   {
@@ -250,6 +236,6 @@ void ControllerInput::onTimer()
     }
   }
   mRepeats = 0;
-  keyPressed(keys);
+  emit(keyPressed(keys));
   mCurrentKey = keys;
 }

@@ -1,7 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-DWORD mAppHandleId = 0;
+DWORD MainWindow::sAppHandleId = 0;
 
 MainWindow::MainWindow(char *argv[], QWidget *parent) :
   QMainWindow(parent),
@@ -10,12 +10,12 @@ MainWindow::MainWindow(char *argv[], QWidget *parent) :
   // init logging
   QString logFile = QString(argv[0]);
   logFile.append(".log");
-  Logger::getInstance(logFile)->log("Starting...");
+  Logger::getInstance()->setLogFile(logFile);
 
   mModel = new ViewModel();
 
   mUi->setupUi(this);
-  Loader::Load(argv[0], mModel);
+  Loader::load(argv[0], mModel);
 
 
   if (mModel->getEmulatorCount() <= 0)
@@ -72,7 +72,7 @@ void MainWindow::keyPressEvent(QKeyEvent* e)
   QMainWindow::keyPressEvent(e);
 }
 
-void HandleNavigationKeys(Input::Keys keys, QListWidget* list)
+void MainWindow::handleNavigationKeys(Input::Keys keys, QListWidget* list)
 {
   int curr = list->currentRow();
   if (keys & Input::Up && curr > 0)
@@ -85,7 +85,7 @@ void HandleNavigationKeys(Input::Keys keys, QListWidget* list)
   }
 }
 
-void StartROM(const Emulator* emulator, const ROM* rom)
+void MainWindow::startROM(const Emulator* emulator, const ROM* rom)
 {
   try
   {
@@ -132,7 +132,7 @@ void StartROM(const Emulator* emulator, const ROM* rom)
                   &pi);          // Pointer to PROCESS_INFORMATION structure
 
     // Close process and thread handles, remember id
-    mAppHandleId = (pi.dwProcessId);
+    sAppHandleId = (pi.dwProcessId);
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
   }
@@ -156,7 +156,7 @@ void MainWindow::onRomListItemDoubleClicked(QListWidgetItem* item)
   {
     return;
   }
-  StartROM(emulator, rom);
+  startROM(emulator, rom);
 }
 
 // So what does this do?
@@ -165,11 +165,11 @@ void MainWindow::onRomListItemDoubleClicked(QListWidgetItem* item)
 // to the one we remembered upon creation of the emulator
 // and then tell it to close
 // not sure if this is the kosher way but it works...
-WINBOOL CALLBACK findAndClose (HWND hwnd, LPARAM lParam)
+WINBOOL CALLBACK MainWindow::findAndClose (HWND hwnd, LPARAM lParam)
 {
   DWORD procid;
   GetWindowThreadProcessId (hwnd, &procid);
-  if (0 != mAppHandleId && procid == mAppHandleId)
+  if (0 != sAppHandleId && procid == sAppHandleId)
   {
     // close the emulator
     PostMessage(hwnd, WM_CLOSE, 0, 0);
@@ -178,11 +178,11 @@ WINBOOL CALLBACK findAndClose (HWND hwnd, LPARAM lParam)
   return TRUE; // continue iterating
 }
 
-WINBOOL CALLBACK findAndEscape (HWND hwnd, LPARAM lParam)
+WINBOOL CALLBACK MainWindow::findAndEscape (HWND hwnd, LPARAM lParam)
 {
   DWORD procid;
   GetWindowThreadProcessId (hwnd, &procid);
-  if (0 != mAppHandleId && procid == mAppHandleId)
+  if (0 != sAppHandleId && procid == sAppHandleId)
   {
     // close the emulator
     PostMessage(hwnd, WM_KEYDOWN,  VK_ESCAPE, 0);
@@ -192,11 +192,11 @@ WINBOOL CALLBACK findAndEscape (HWND hwnd, LPARAM lParam)
 }
 
 // second pass, if found here it seemed not to have reacted to WM_CLOSE
-WINBOOL CALLBACK findAndKill (HWND hwnd, LPARAM lParam)
+WINBOOL CALLBACK MainWindow::findAndKill (HWND hwnd, LPARAM lParam)
 {
   DWORD procid;
   GetWindowThreadProcessId (hwnd, &procid);
-  if (0 != mAppHandleId && procid == mAppHandleId)
+  if (0 != sAppHandleId && procid == sAppHandleId)
   {
     Logger::getInstance()->log("Process seemed not to react to WM_CLOSE");
     // close the emulator
@@ -212,7 +212,7 @@ void MainWindow::onControllerInput(Input::Keys keys)
   {
     return;
   }
-  if (keys & Input::Exit && 0 != mAppHandleId)
+  if (keys & Input::Exit && 0 != sAppHandleId)
   {
     try
       {
@@ -225,7 +225,7 @@ void MainWindow::onControllerInput(Input::Keys keys)
       // try the not so nice way (TerminateProcess)
       EnumWindows(findAndKill, 0);
       // reset handle
-      mAppHandleId = 0;
+      sAppHandleId = 0;
 
       return;
       }
@@ -235,7 +235,7 @@ void MainWindow::onControllerInput(Input::Keys keys)
     }
   }
   // exit this progrma
-  if (keys & Input::Exit && keys & Input::Accept && 0 == mAppHandleId &&
+  if (keys & Input::Exit && keys & Input::Accept && 0 == sAppHandleId &&
       (mUi->mListEmulators->hasFocus() || mUi->mListRoms->hasFocus()))
   {
     exit(0);
@@ -244,7 +244,7 @@ void MainWindow::onControllerInput(Input::Keys keys)
   // triggering these if an emulator is running (and thus has focus)
   if (mUi->mListEmulators->hasFocus())
   {
-    HandleNavigationKeys(keys, mUi->mListEmulators);
+    handleNavigationKeys(keys, mUi->mListEmulators);
     if (keys & Input::Accept)
     {
       mUi->mListRoms->setFocus();
@@ -253,7 +253,7 @@ void MainWindow::onControllerInput(Input::Keys keys)
   }
   else if (mUi->mListRoms->hasFocus())
   {
-    HandleNavigationKeys(keys, mUi->mListRoms);
+    handleNavigationKeys(keys, mUi->mListRoms);
     if (keys & Input::Back)
     {
       mUi->mListEmulators->setFocus();
@@ -262,7 +262,7 @@ void MainWindow::onControllerInput(Input::Keys keys)
     {
       const Emulator* emulator = mModel->getEmulatorForIndex(mUi->mListEmulators->currentRow());
       const ROM* rom = mModel->getRomForIndex(emulator, mUi->mListRoms->currentRow());
-      StartROM(emulator, rom);
+      startROM(emulator, rom);
     }
   }
 }

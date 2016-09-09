@@ -1,20 +1,14 @@
 #include "logger.h"
 
-Logger* sInstance = NULL;
-std::ofstream* mLogFile = NULL;
+Logger* Logger::sInstance = NULL;
 
-Logger* Logger::getInstance(const QString logFileName)
+Logger::Logger(){}
+
+Logger* Logger::getInstance()
 {
   if (NULL == sInstance)
-  {
-    if (NULL != logFileName)
-    {
-      sInstance = new Logger(logFileName.toStdString());
-    }
-    else
-    {
-      qDebug() << "Set File name prior to calling getInstance";
-    }
+  {   
+    sInstance = new Logger();
   }
   return sInstance;
 }
@@ -25,29 +19,25 @@ void Logger::cleanup()
   {
     return;
   }
+  delete (sInstance->mLogFilePath);
   sInstance = NULL;
-  if (NULL != mLogFile)
-  {
-    if (mLogFile->is_open())
-    {
-      mLogFile->close();
-    }
-    delete mLogFile;
-    mLogFile = NULL;
-  }
 }
 
-Logger::Logger(const std::string logFileName)
+void Logger::setLogFile(const QString logFile)
 {
-  try
+  mLogFilePath = new char[logFile.length() + 1];
+  wchar_t buffer[logFile.length()];
+  logFile.toWCharArray(buffer);
+  for (int i = 0; i < logFile.length(); ++i)
   {
-    mLogFile = new std::ofstream();
-    mLogFile->open(logFileName.c_str());
+    // make char* from wchar_t*
+    mLogFilePath[i] = buffer[i];
   }
-  catch(...)
-  {
-    qDebug() << "Could not open file for logger";
-  }
+  mLogFilePath[logFile.length()] = '\0';
+  // remove old log file (maybe change this sometime?)
+  std::ofstream ofs;
+  ofs.open(mLogFilePath, std::ofstream::out | std::ofstream::trunc);
+  ofs.close();
 }
 
 void Logger::log(const QString message)
@@ -55,22 +45,24 @@ void Logger::log(const QString message)
   try
   {
     qDebug() << message;
-    if (!mLogFile->is_open())
+    std::ofstream file;
+    file.open(mLogFilePath, std::ofstream::out | std::ofstream::app);
+    if (!file.is_open())
     {
-      return;
+        qDebug() << "Error logging to file";
+        return;
     }
     QString logEntry = QDateTime::currentDateTime().toString("dd.MM.yyyy/hh:mm:ss");
     logEntry.append('\t');
     logEntry.append(message);
-    *mLogFile << logEntry.toStdString() << "\n";
+    file << logEntry.toStdString() << "\n";
+    file.close();
   }
   catch(...)
   {
     qDebug() << "Error logging to file";
   }
 }
-
-int mFlags;
 
 void Logger::logOnce(const QString message, const int flag)
 {

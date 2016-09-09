@@ -29,7 +29,15 @@ protected:
 private:
     Ui::MainWindow *mUi;
     ViewModel *mModel;
-    void updateRomList();
+    void updateRomList(); 
+    void handleNavigationKeys(Input::Keys keys, QListWidget* list);
+    void startROM(const Emulator* emulator, const ROM* rom);
+    // stuff for closing a running program
+    // WINAPI callbacks have to be static
+    static DWORD sAppHandleId;
+    static WINBOOL CALLBACK findAndKill (HWND hwnd, LPARAM lParam);
+    static WINBOOL CALLBACK findAndClose (HWND hwnd, LPARAM lParam);
+    static WINBOOL CALLBACK findAndEscape (HWND hwnd, LPARAM lParam);
 
 private slots:
     void onControllerInput(Input::Keys keys);

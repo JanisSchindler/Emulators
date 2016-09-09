@@ -113,6 +113,9 @@ class ViewModel
 
 private:
     std::map<const Emulator*, std::vector<const ROM*>* > mMapEmulator2Rom;
+    static std::vector<const ROM*>* sEmptyRoms;
+    static Emulator* sNoEmulator;
+    static ROM* sNoROM;
 };
 
 #endif // VIEWMODEL_H

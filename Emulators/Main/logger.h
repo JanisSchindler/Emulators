@@ -8,14 +8,18 @@
 
 class Logger
 {
-public:  
-  static Logger* getInstance(const QString logFileName = NULL);
+public:
+  static Logger* getInstance();
   static void cleanup();
+  void setLogFile(const QString logFile);
   void log(const QString message);
   void logOnce(const QString message, int flag);
 
 private:
-  Logger(const std::string logFileName);
+  char* mLogFilePath;
+  int mFlags;
+  static Logger* sInstance;
+  Logger();
 };
 
 #endif // LOGGER_H

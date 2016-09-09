@@ -30,8 +30,8 @@ public:
     QWidget *centralWidget;
     QVBoxLayout *verticalLayout;
     QGridLayout *gridLayout;
-    QListWidget *mListRoms;
     QListWidget *mListEmulators;
+    QListWidget *mListRoms;
     QToolBar *mainToolBar;
     QStatusBar *statusBar;
 
@@ -57,24 +57,24 @@ public:
         gridLayout = new QGridLayout();
         gridLayout->setSpacing(6);
         gridLayout->setObjectName(QStringLiteral("gridLayout"));
-        mListRoms = new QListWidget(centralWidget);
-        mListRoms->setObjectName(QStringLiteral("mListRoms"));
+        mListEmulators = new QListWidget(centralWidget);
+        mListEmulators->setObjectName(QStringLiteral("mListEmulators"));
         QFont font;
         font.setFamily(QStringLiteral("Microsoft Sans Serif"));
         font.setPointSize(20);
+        mListEmulators->setFont(font);
+        mListEmulators->setStyleSheet(QStringLiteral("background-color: rgb(255, 255, 255);"));
+
+        gridLayout->addWidget(mListEmulators, 1, 0, 1, 2);
+
+        mListRoms = new QListWidget(centralWidget);
+        mListRoms->setObjectName(QStringLiteral("mListRoms"));
         mListRoms->setFont(font);
         mListRoms->setAutoFillBackground(false);
         mListRoms->setStyleSheet(QStringLiteral("background-color: rgb(255, 255, 255);"));
         mListRoms->setAlternatingRowColors(true);
 
         gridLayout->addWidget(mListRoms, 2, 0, 1, 2);
-
-        mListEmulators = new QListWidget(centralWidget);
-        mListEmulators->setObjectName(QStringLiteral("mListEmulators"));
-        mListEmulators->setFont(font);
-        mListEmulators->setStyleSheet(QStringLiteral("background-color: rgb(255, 255, 255);"));
-
-        gridLayout->addWidget(mListEmulators, 1, 0, 1, 2);
 
 
         verticalLayout->addLayout(gridLayout);

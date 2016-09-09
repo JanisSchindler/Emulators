@@ -3,9 +3,9 @@
 int Emulator::sCount = 0;
 int ROM::sCount = 0;
 
-static std::vector<const ROM*>* sEmptyRoms = new std::vector<const ROM*>();
-static Emulator* sNoEmulator = new Emulator();
-static ROM* sNoROM = new ROM();
+std::vector<const ROM*>* ViewModel::sEmptyRoms = new std::vector<const ROM*>();
+Emulator* ViewModel::sNoEmulator = new Emulator();
+ROM* ViewModel::sNoROM = new ROM();
 
 ViewModel::ViewModel()
 {
